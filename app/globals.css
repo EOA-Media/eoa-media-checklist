@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222 47% 7%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 263 70% 50%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 222 47% 15%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 222 47% 15%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 263 70% 50%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217 19% 18%;
+    --input: 217 19% 18%;
+    --ring: 263 70% 50%;
+    --radius: 0.75rem;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-navy-950 text-foreground;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(ellipse at top right, rgba(102, 126, 234, 0.15), transparent 60%),
+                radial-gradient(ellipse at bottom left, rgba(118, 75, 162, 0.12), transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #__next,
+  #__next > div {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-white/[0.05] backdrop-blur-xl border border-white/10;
+  }
+
+  .glass-input {
+    @apply bg-white/[0.05] backdrop-blur-sm border border-white/10
+           focus:border-white/20 focus:ring-2 focus:ring-purple-500/20
+           transition-all duration-200;
+  }
+
+  .btn-gradient {
+    @apply bg-gradient-to-r from-blue-600 to-purple-600
+           hover:from-blue-500 hover:to-purple-500
+           shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40
+           transition-all duration-200;
+  }
+
+  .text-gradient {
+    @apply bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent;
+  }
+}
