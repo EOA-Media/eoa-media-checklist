@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2 } from 'lucide-react';
+import { ArrowRight, CheckSquare, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -50,73 +50,85 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl shadow-2xl p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">EOA Media Checklist</h1>
-            <p className="text-gray-400">Sign in to your account</p>
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#080d18] px-4 py-8">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_16%,rgba(47,108,246,0.12),transparent_32%),radial-gradient(circle_at_50%_86%,rgba(140,53,237,0.1),transparent_34%)]" />
+
+      <section className="relative w-full max-w-[440px]">
+        <div className="mb-7 flex items-center justify-center gap-3">
+          <div className="btn-gradient flex h-11 w-11 items-center justify-center rounded-xl">
+            <CheckSquare className="h-5 w-5 text-white" />
           </div>
+          <div>
+            <div className="font-bold text-white">EOA Media</div>
+            <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Checklist</div>
+          </div>
+        </div>
+
+        <div className="surface-card w-full overflow-hidden rounded-2xl p-6 sm:p-8">
+          <h1 className="mb-7 text-center text-2xl font-bold tracking-tight text-white">
+            Sign in
+          </h1>
 
           {error && (
-            <Alert variant="destructive" className="mb-6">
+            <Alert variant="destructive" className="mb-6 border-red-500/25 bg-red-500/10 text-red-300">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleLogin} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-gray-200">Email</Label>
+              <Label htmlFor="email" className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">
+                Email
+              </Label>
               <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@email.com"
+                placeholder="you@eoamedia.net"
                 required
-                className="bg-gray-900/50 border-gray-600 text-white placeholder:text-gray-500 focus:border-blue-500"
+                className="glass-input h-11 w-full text-white placeholder:text-slate-600"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-gray-200">Password</Label>
+              <Label htmlFor="password" className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">
+                Password
+              </Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="Enter your password"
                 required
-                className="bg-gray-900/50 border-gray-600 text-white placeholder:text-gray-500 focus:border-blue-500"
+                className="glass-input h-11 w-full text-white placeholder:text-slate-600"
               />
             </div>
 
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white h-11 text-base"
-            >
+            <Button type="submit" disabled={loading} className="btn-gradient h-11 w-full font-semibold">
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Signing in...
                 </>
               ) : (
-                'Sign In'
+                <>
+                  Sign in
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </>
               )}
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-gray-400">
-              Don&apos;t have an account?{' '}
-              <Link href="/signup" className="text-blue-400 hover:text-blue-300 font-medium">
-                Sign up
-              </Link>
-            </p>
-          </div>
+          <p className="mt-6 text-center text-sm text-slate-500">
+            New to the workspace?{' '}
+            <Link href="/signup" className="font-semibold text-indigo-300 transition-colors hover:text-indigo-200">
+              Create an account
+            </Link>
+          </p>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

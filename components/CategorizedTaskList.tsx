@@ -1,19 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   DndContext,
+  DragCancelEvent,
   DragEndEvent,
   DragOverlay,
+  DragOverEvent,
   DragStartEvent,
   PointerSensor,
   TouchSensor,
+  closestCorners,
   useSensor,
   useSensors,
-  closestCorners,
-  DragOverEvent,
 } from '@dnd-kit/core';
-import { arrayMove } from '@dnd-kit/sortable';
 import { CategoryTaskSection } from './CategoryTaskSection';
 import { TaskRow } from './TaskRow';
 import type { TaskWithRecurrence } from '@/lib/supabase/types';
@@ -36,6 +36,26 @@ interface CategorizedTaskListProps {
   onTasksReordered: () => void;
 }
 
+const categoryKey = (categoryId: string | null) => categoryId || 'uncategorized';
+
+const categoryIdFromDropTarget = (
+  overId: string,
+  currentTasks: TaskWithRecurrence[]
+): string | null | undefined => {
+  if (overId.startsWith('category-')) {
+    const id = overId.replace('category-', '');
+    return id === 'uncategorized' ? null : id;
+  }
+
+  return currentTasks.find((task) => task.id === overId)?.category_id;
+};
+
+const sortCategoryTasks = (categoryTasks: TaskWithRecurrence[]) =>
+  [...categoryTasks].sort((a, b) => {
+    if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
+    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  });
+
 export function CategorizedTaskList({
   tasks,
   categories,
@@ -53,173 +73,151 @@ export function CategorizedTaskList({
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
+      activationConstraint: { distance: 8 },
     }),
     useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 200,
-        tolerance: 5,
-      },
+      activationConstraint: { delay: 200, tolerance: 5 },
     })
   );
 
-  const groupedTasks = localTasks.reduce((acc, task) => {
-    const key = task.category_id || 'uncategorized';
-    if (!acc[key]) {
-      acc[key] = [];
-    }
-    acc[key].push(task);
-    return acc;
+  const groupedTasks = localTasks.reduce((groups, task) => {
+    const key = categoryKey(task.category_id);
+    groups[key] = groups[key] || [];
+    groups[key].push(task);
+    return groups;
   }, {} as Record<string, TaskWithRecurrence[]>);
 
   Object.keys(groupedTasks).forEach((key) => {
-    groupedTasks[key].sort((a, b) => {
-      if (a.sort_order !== b.sort_order) {
-        return a.sort_order - b.sort_order;
-      }
-      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-    });
+    groupedTasks[key] = sortCategoryTasks(groupedTasks[key]);
   });
 
-  const handleDragStart = (event: DragStartEvent) => {
-    const { active } = event;
-    const task = localTasks.find((t) => t.id === active.id);
-    if (task) {
-      setActiveTask(task);
-    }
+  const handleDragStart = ({ active }: DragStartEvent) => {
+    const task = localTasks.find((item) => item.id === active.id);
+    if (task) setActiveTask({ ...task });
   };
 
-  const handleDragOver = (event: DragOverEvent) => {
-    const { active, over } = event;
+  const handleDragOver = ({ active, over }: DragOverEvent) => {
     if (!over) return;
 
-    const activeId = active.id as string;
-    const overId = over.id as string;
+    const activeId = String(active.id);
+    const overId = String(over.id);
 
-    const activeTask = localTasks.find((t) => t.id === activeId);
-    if (!activeTask) return;
+    setLocalTasks((currentTasks) => {
+      const draggedTask = currentTasks.find((task) => task.id === activeId);
+      const targetCategoryId = categoryIdFromDropTarget(overId, currentTasks);
 
-    if (overId.startsWith('category-')) {
-      const targetCategoryId = overId.replace('category-', '');
-      const newCategoryId = targetCategoryId === 'uncategorized' ? null : targetCategoryId;
-
-      if (activeTask.category_id !== newCategoryId) {
-        setLocalTasks((prevTasks) =>
-          prevTasks.map((t) =>
-            t.id === activeId
-              ? { ...t, category_id: newCategoryId }
-              : t
-          )
-        );
+      if (!draggedTask || targetCategoryId === undefined || draggedTask.category_id === targetCategoryId) {
+        return currentTasks;
       }
-    }
+
+      const targetTasks = sortCategoryTasks(
+        currentTasks.filter(
+          (task) => task.id !== activeId && categoryKey(task.category_id) === categoryKey(targetCategoryId)
+        )
+      );
+      const overIndex = targetTasks.findIndex((task) => task.id === overId);
+      const nextOrder = overIndex >= 0 ? overIndex : targetTasks.length;
+
+      return currentTasks.map((task) =>
+        task.id === activeId
+          ? { ...task, category_id: targetCategoryId, sort_order: nextOrder }
+          : task
+      );
+    });
   };
 
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
+  const handleDragCancel = (_event: DragCancelEvent) => {
+    setActiveTask(null);
+    setLocalTasks(tasks);
+  };
+
+  const handleDragEnd = async ({ active, over }: DragEndEvent) => {
+    const originalTask = activeTask || tasks.find((task) => task.id === active.id) || null;
     setActiveTask(null);
 
-    if (!over) return;
-
-    const activeId = active.id as string;
-    const overId = over.id as string;
-
-    const activeTask = localTasks.find((t) => t.id === activeId);
-    if (!activeTask) return;
-
-    let targetCategoryId: string | null = activeTask.category_id;
-
-    if (overId.startsWith('category-')) {
-      const categoryKey = overId.replace('category-', '');
-      targetCategoryId = categoryKey === 'uncategorized' ? null : categoryKey;
-    } else {
-      const overTask = localTasks.find((t) => t.id === overId);
-      if (overTask) {
-        targetCategoryId = overTask.category_id;
-      }
+    if (!over || !originalTask) {
+      setLocalTasks(tasks);
+      return;
     }
 
-    const sourceCategoryKey = activeTask.category_id || 'uncategorized';
-    const targetCategoryKey = targetCategoryId || 'uncategorized';
+    const activeId = String(active.id);
+    const overId = String(over.id);
+    const targetCategoryId = categoryIdFromDropTarget(overId, localTasks);
 
-    if (sourceCategoryKey === targetCategoryKey && activeId !== overId) {
-      const categoryTasks = groupedTasks[sourceCategoryKey] || [];
-      const oldIndex = categoryTasks.findIndex((t) => t.id === activeId);
-      const newIndex = categoryTasks.findIndex((t) => t.id === overId);
-
-      if (oldIndex !== -1 && newIndex !== -1) {
-        const reorderedTasks = arrayMove(categoryTasks, oldIndex, newIndex);
-
-        const updatedTasks = localTasks.map((task) => {
-          if ((task.category_id || 'uncategorized') === sourceCategoryKey) {
-            const newOrder = reorderedTasks.findIndex((t) => t.id === task.id);
-            return { ...task, sort_order: newOrder };
-          }
-          return task;
-        });
-
-        setLocalTasks(updatedTasks);
-
-        const updates = reorderedTasks.map((task, index) => ({
-          id: task.id,
-          sort_order: index,
-          category_id: task.category_id,
-        }));
-
-        await persistReorder(updates);
-      }
-    } else if (sourceCategoryKey !== targetCategoryKey) {
-      const targetCategoryTasks = groupedTasks[targetCategoryKey] || [];
-      const insertIndex = overId.startsWith('category-')
-        ? 0
-        : targetCategoryTasks.findIndex((t) => t.id === overId);
-
-      const updatedTasks = localTasks.map((task) => {
-        if (task.id === activeId) {
-          return {
-            ...task,
-            category_id: targetCategoryId,
-            sort_order: insertIndex >= 0 ? insertIndex : 0,
-          };
-        }
-
-        if ((task.category_id || 'uncategorized') === targetCategoryKey) {
-          const currentIndex = targetCategoryTasks.findIndex((t) => t.id === task.id);
-          if (insertIndex >= 0 && currentIndex >= insertIndex) {
-            return { ...task, sort_order: task.sort_order + 1 };
-          }
-        }
-
-        return task;
-      });
-
-      setLocalTasks(updatedTasks);
-
-      const sourceUpdates = updatedTasks
-        .filter((t) => (t.category_id || 'uncategorized') === sourceCategoryKey)
-        .sort((a, b) => a.sort_order - b.sort_order)
-        .map((task, index) => ({
-          id: task.id,
-          sort_order: index,
-          category_id: task.category_id,
-        }));
-
-      const targetUpdates = updatedTasks
-        .filter((t) => (t.category_id || 'uncategorized') === targetCategoryKey)
-        .sort((a, b) => a.sort_order - b.sort_order)
-        .map((task, index) => ({
-          id: task.id,
-          sort_order: index,
-          category_id: task.category_id,
-        }));
-
-      await persistReorder([...sourceUpdates, ...targetUpdates]);
+    if (targetCategoryId === undefined) {
+      setLocalTasks(tasks);
+      return;
     }
+
+    const sourceKey = categoryKey(originalTask.category_id);
+    const targetKey = categoryKey(targetCategoryId);
+
+    const sourceTasks = sortCategoryTasks(
+      localTasks.filter(
+        (task) => task.id !== activeId && categoryKey(task.category_id) === sourceKey
+      )
+    );
+    const targetTasks = sourceKey === targetKey
+      ? sourceTasks
+      : sortCategoryTasks(
+          localTasks.filter(
+            (task) => task.id !== activeId && categoryKey(task.category_id) === targetKey
+          )
+        );
+
+    const overIndex = targetTasks.findIndex((task) => task.id === overId);
+    const insertIndex = overId.startsWith('category-')
+      ? targetTasks.length
+      : overIndex >= 0
+        ? overIndex
+        : targetTasks.length;
+
+    const movedTask = {
+      ...originalTask,
+      category_id: targetCategoryId,
+    };
+    const reorderedTarget = [...targetTasks];
+    reorderedTarget.splice(insertIndex, 0, movedTask);
+
+    const sourceOrder = new Map(sourceTasks.map((task, index) => [task.id, index]));
+    const targetOrder = new Map(reorderedTarget.map((task, index) => [task.id, index]));
+
+    const updatedTasks = localTasks.map((task) => {
+      if (task.id === activeId) {
+        return {
+          ...task,
+          category_id: targetCategoryId,
+          sort_order: targetOrder.get(task.id) ?? 0,
+        };
+      }
+
+      const key = categoryKey(task.category_id);
+      if (key === targetKey) {
+        return { ...task, sort_order: targetOrder.get(task.id) ?? task.sort_order };
+      }
+      if (sourceKey !== targetKey && key === sourceKey) {
+        return { ...task, sort_order: sourceOrder.get(task.id) ?? task.sort_order };
+      }
+      return task;
+    });
+
+    setLocalTasks(updatedTasks);
+
+    const affectedKeys = new Set([sourceKey, targetKey]);
+    const updates = updatedTasks
+      .filter((task) => affectedKeys.has(categoryKey(task.category_id)))
+      .map((task) => ({
+        id: task.id,
+        sort_order: task.sort_order,
+        category_id: task.category_id,
+      }));
+
+    await persistReorder(updates);
   };
 
-  const persistReorder = async (updates: Array<{ id: string; sort_order: number; category_id: string | null }>) => {
+  const persistReorder = async (
+    updates: Array<{ id: string; sort_order: number; category_id: string | null }>
+  ) => {
     try {
       const supabase = createClient();
       const { error } = await supabase.rpc('reorder_tasks', {
@@ -227,7 +225,6 @@ export function CategorizedTaskList({
       });
 
       if (error) throw error;
-
       onTasksReordered();
     } catch (error) {
       console.error('Error reordering tasks:', error);
@@ -236,20 +233,11 @@ export function CategorizedTaskList({
     }
   };
 
-  const categoriesWithTasks = categories
-    .map((cat) => ({
-      ...cat,
-      tasks: groupedTasks[cat.id] || [],
-    }))
-    .filter((cat) => cat.tasks.length > 0);
-
-  const uncategorizedTasks = groupedTasks['uncategorized'] || [];
-
-  if (localTasks.length === 0) {
+  if (localTasks.length === 0 && categories.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 text-gray-300">
+      <div className="flex h-64 flex-col items-center justify-center text-slate-300">
         <p className="text-lg font-semibold">No tasks yet</p>
-        <p className="text-sm text-gray-400 mt-1">Create your first task to get started</p>
+        <p className="mt-1 text-sm text-slate-500">Create your first task to get started</p>
       </div>
     );
   }
@@ -260,32 +248,31 @@ export function CategorizedTaskList({
       collisionDetection={closestCorners}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
+      onDragCancel={handleDragCancel}
       onDragEnd={handleDragEnd}
     >
       <div className="space-y-4">
-        {categoriesWithTasks.map((category) => (
+        {categories.map((category) => (
           <CategoryTaskSection
             key={category.id}
             categoryId={category.id}
             categoryName={category.name}
             categoryColor={category.color}
-            tasks={category.tasks}
+            tasks={groupedTasks[category.id] || []}
             onToggleComplete={onToggleComplete}
             onEditTask={onEditTask}
             onDeleteTask={onDeleteTask}
           />
         ))}
 
-        {uncategorizedTasks.length > 0 && (
-          <CategoryTaskSection
-            categoryId={null}
-            categoryName="Uncategorized"
-            tasks={uncategorizedTasks}
-            onToggleComplete={onToggleComplete}
-            onEditTask={onEditTask}
-            onDeleteTask={onDeleteTask}
-          />
-        )}
+        <CategoryTaskSection
+          categoryId={null}
+          categoryName="Uncategorized"
+          tasks={groupedTasks.uncategorized || []}
+          onToggleComplete={onToggleComplete}
+          onEditTask={onEditTask}
+          onDeleteTask={onDeleteTask}
+        />
       </div>
 
       <DragOverlay>
@@ -298,7 +285,7 @@ export function CategorizedTaskList({
             onToggleComplete={() => {}}
             onEditTask={() => {}}
             onDeleteTask={() => {}}
-            isDragging={true}
+            isDragging
           />
         ) : null}
       </DragOverlay>

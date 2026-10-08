@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+tsconfig.tsbuildinfo
+
+# Local environment files
+.env
+.env.local
+.env.*.local
+
+# Local logs
+*.log
+
+# Supabase CLI state
+supabase/.temp/
+
+# This project uses npm/package-lock.json
+pnpm-lock.yaml
+pnpm-workspace.yaml
+
+# OS and editor files
+.DS_Store
+Thumbs.db

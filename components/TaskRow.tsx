@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Clock, Calendar as CalendarIcon, Repeat, Edit2, Trash2, MoreVertical, GripVertical } from 'lucide-react';
+import { Clock, Calendar as CalendarIcon, Repeat, Edit2, Trash2, MoreVertical, GripVertical, Flame } from 'lucide-react';
 import type { TaskWithRecurrence } from '@/lib/supabase/types';
 import { format } from 'date-fns';
 
@@ -32,6 +32,7 @@ interface TaskRowProps {
   onEditTask: (task: TaskWithRecurrence) => void;
   onDeleteTask: (id: string) => void;
   dragHandleProps?: any;
+  rowDragHandleProps?: any;
   isDragging?: boolean;
   style?: React.CSSProperties;
   categoryColor?: string;
@@ -46,6 +47,7 @@ export function TaskRow({
   onEditTask,
   onDeleteTask,
   dragHandleProps,
+  rowDragHandleProps,
   isDragging = false,
   style,
   categoryColor,
@@ -112,7 +114,8 @@ export function TaskRow({
   return (
     <>
       <div
-        className={`glass-panel border-white/10 rounded-xl hover:border-white/20 hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-200 cursor-pointer group relative overflow-hidden ${
+        {...rowDragHandleProps}
+        className={`surface-card group relative cursor-pointer overflow-hidden rounded-xl transition-all duration-200 hover:border-indigo-400/25 hover:bg-[#141e30] hover:shadow-lg hover:shadow-indigo-950/30 ${rowDragHandleProps ? 'touch-none' : ''} ${
           isCompleted ? 'opacity-60' : ''
         } ${isDragging ? 'opacity-50 scale-105 shadow-xl shadow-blue-500/30 border-blue-500/50' : ''}`}
         onClick={handleRowClick}
@@ -124,12 +127,12 @@ export function TaskRow({
             style={{ backgroundColor: categoryColor, opacity: 0.8 }}
           />
         )}
-        <div className="px-3 py-3.5 md:px-4 md:py-4">
+        <div className="px-3 py-3.5 md:px-4 md:py-3.5">
           <div className="flex items-start gap-2.5">
             {dragHandleProps && (
               <div
                 {...dragHandleProps}
-                className="flex-shrink-0 cursor-grab active:cursor-grabbing touch-none pt-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="flex-shrink-0 cursor-grab touch-none pt-0.5 opacity-0 transition-opacity group-hover:opacity-100 hover:opacity-100 active:cursor-grabbing"
                 onClick={handleDragHandleClick}
               >
                 <GripVertical className="h-4 w-4 text-gray-400 hover:text-gray-200 transition-colors" />
@@ -152,7 +155,7 @@ export function TaskRow({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                 <h3
-                  className={`font-semibold text-white text-[17px] md:text-lg leading-snug ${
+                  className={`text-[15px] font-semibold leading-snug text-slate-100 md:text-base ${
                     isCompleted ? 'line-through' : ''
                   }`}
                 >
@@ -164,6 +167,16 @@ export function TaskRow({
                     <span className="hidden sm:inline">
                       {task.recurrence?.pattern === 'daily' ? 'Daily' : 'Weekly'}
                     </span>
+                  </span>
+                )}
+                {task.recurrence?.pattern === 'daily' && task.daily_streak > 0 && (
+                  <span
+                    className="inline-flex flex-shrink-0 items-center gap-1 rounded-full border border-orange-400/20 bg-orange-500/10 px-2 py-0.5 text-[11px] font-bold text-orange-300"
+                    title={`${task.daily_streak} day streak`}
+                    aria-label={`${task.daily_streak} day streak`}
+                  >
+                    <Flame className="h-3 w-3 fill-orange-400 text-orange-400" />
+                    {task.daily_streak}
                   </span>
                 )}
               </div>
@@ -180,7 +193,7 @@ export function TaskRow({
               )}
 
               {task.notes && (
-                <p className="text-sm text-gray-300 mt-1.5 mb-2.5 line-clamp-2 leading-relaxed">
+                <p className="mb-2.5 mt-1.5 line-clamp-2 text-sm leading-relaxed text-slate-400">
                   {task.notes}
                 </p>
               )}

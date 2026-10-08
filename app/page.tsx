@@ -28,8 +28,13 @@ export default function RootPage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-      <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+    <div className="min-h-screen flex items-center justify-center bg-[#080d18]">
+      <div className="flex flex-col items-center gap-4">
+        <div className="h-12 w-12 rounded-2xl btn-gradient flex items-center justify-center">
+          <Loader2 className="h-5 w-5 animate-spin text-white" />
+        </div>
+        <span className="eyebrow">Loading workspace</span>
+      </div>
     </div>
   );
 }

@@ -54,16 +54,16 @@ export function CategoryTaskSection({
   const taskIds = tasks.map((t) => t.id);
 
   return (
-    <div className="mb-4">
+    <div className="mb-5">
       <div
         ref={setNodeRef}
-        className={`flex items-center gap-3 px-4 py-3 glass-panel border-white/10 rounded-xl cursor-pointer hover:border-white/20 hover:bg-white/[0.08] transition-all duration-200 ${
-          isOver && !isExpanded ? 'border-blue-500/50 bg-blue-500/10' : ''
+        className={`surface-card flex cursor-pointer items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200 hover:border-slate-600/50 hover:bg-[#151f31] ${
+          isOver && !isExpanded ? 'border-indigo-400/50 bg-indigo-500/10' : ''
         }`}
         onClick={toggleExpanded}
       >
         <ChevronRight
-          className={`h-4 w-4 text-gray-300 transition-transform duration-200 ${
+          className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${
             isExpanded ? 'rotate-90' : ''
           }`}
         />
@@ -79,13 +79,13 @@ export function CategoryTaskSection({
           {categoryName}
         </h3>
 
-        <span className="text-xs text-gray-400 font-medium px-2 py-1 bg-white/5 rounded-full">
+        <span className="rounded-md border border-slate-700/60 bg-slate-800/50 px-2 py-0.5 text-[10px] font-semibold text-slate-400">
           {tasks.length}
         </span>
       </div>
 
       {isExpanded && (
-        <div className="mt-3 space-y-2">
+        <div className="mt-2.5 space-y-2">
           <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
             {tasks.map((task) => {
               const isCompleted = !!task.completed_at;

@@ -81,23 +81,23 @@ export function CategorySidebar({
   };
 
   return (
-    <div className="glass-panel border-r border-white/10 flex flex-col h-full backdrop-blur-xl">
-      <div className="p-4 border-b border-white/10">
-        <h2 className="text-lg font-semibold text-white mb-3">Categories</h2>
+    <div className="flex h-full flex-col bg-[#0d1422]/80">
+      <div className="border-b border-slate-800/70 p-4">
+        <div className="eyebrow mb-3 px-2">Categories</div>
         <Button
           onClick={() => onSelectCategory(null)}
           variant="ghost"
           className={`w-full justify-start rounded-lg transition-all duration-200 ${
             selectedCategoryId === null
-              ? 'btn-gradient text-white'
-              : 'text-gray-300 hover:text-white hover:bg-white/10'
+              ? 'border border-indigo-400/25 bg-indigo-500/15 text-white'
+              : 'text-slate-400 hover:bg-white/[0.04] hover:text-white'
           }`}
         >
           All Tasks
         </Button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+      <div className="flex-1 space-y-1 overflow-y-auto p-3">
         {categories.map((category) => (
           <div key={category.id} className="group">
             {editingId === category.id ? (
@@ -152,8 +152,8 @@ export function CategorySidebar({
               <div
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all duration-200 ${
                   selectedCategoryId === category.id
-                    ? 'btn-gradient text-white'
-                    : 'text-gray-300 hover:bg-white/10'
+                    ? 'border border-indigo-400/20 bg-gradient-to-r from-indigo-500/16 to-violet-500/8 text-white'
+                    : 'border border-transparent text-slate-400 hover:bg-white/[0.04] hover:text-slate-100'
                 }`}
                 onClick={() => onSelectCategory(category.id)}
               >
@@ -192,7 +192,7 @@ export function CategorySidebar({
         ))}
       </div>
 
-      <div className="p-4 border-t border-white/10">
+      <div className="border-t border-slate-800/70 p-4">
         {isAdding ? (
           <div className="space-y-3">
             <Input

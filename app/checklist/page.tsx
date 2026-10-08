@@ -14,6 +14,15 @@ import type { Category, TaskWithRecurrence } from '@/lib/supabase/types';
 import { toast } from 'sonner';
 import { Toaster } from '@/components/ui/sonner';
 import { shouldShowRecurringTask, shouldResetDailyTask, shouldDeleteCompletedTask } from '@/lib/utils/date-helpers';
+import {
+  clearStoredDailyStreak,
+  completeDailyStreak,
+  getStoredDailyStreak,
+  hasDatabaseStreakFields,
+  isDailyStreakExpired,
+  reopenDailyStreak,
+  setStoredDailyStreak,
+} from '@/lib/utils/daily-streak';
 import { AppLayout } from '@/components/AppLayout';
 
 export default function ChecklistPage() {
@@ -96,7 +105,33 @@ export default function ChecklistPage() {
       return;
     }
 
-    setTasks(data || []);
+    const hydratedTasks = (data || []).map((task) => {
+      if (task.recurrence?.pattern !== 'daily') {
+        return {
+          ...task,
+          daily_streak: task.daily_streak || 0,
+          last_streak_date: task.last_streak_date || null,
+        };
+      }
+
+      if (hasDatabaseStreakFields(task)) {
+        return task;
+      }
+
+      const storedStreak = getStoredDailyStreak(task.id);
+      if (isDailyStreakExpired(storedStreak.lastCompletedDate)) {
+        clearStoredDailyStreak(task.id);
+        return { ...task, daily_streak: 0, last_streak_date: null };
+      }
+
+      return {
+        ...task,
+        daily_streak: storedStreak.count,
+        last_streak_date: storedStreak.lastCompletedDate,
+      };
+    });
+
+    setTasks(hydratedTasks);
   };
 
   const resetDailyRecurringTasks = async () => {
@@ -106,17 +141,39 @@ export default function ChecklistPage() {
         .select(`
           *,
           recurrence:task_recurrence(*)
-        `)
-        .not('completed_at', 'is', null);
+        `);
 
       if (!tasksToReset) return;
 
-      const tasksToResetIds = tasksToReset
+      const dailyTasks = tasksToReset.filter(
+        (task) => task.recurrence?.pattern === 'daily'
+      );
+
+      const tasksToResetIds = dailyTasks
         .filter((task) => {
-          const pattern = task.recurrence?.pattern || 'none';
-          return shouldResetDailyTask(task.completed_at, pattern);
+          return shouldResetDailyTask(task.completed_at, 'daily');
         })
         .map((task) => task.id);
+
+      const supportsDatabaseStreaks = dailyTasks.some(hasDatabaseStreakFields);
+      const expiredStreakIds = supportsDatabaseStreaks
+        ? dailyTasks
+            .filter(
+              (task) =>
+                (task.daily_streak || 0) > 0 &&
+                isDailyStreakExpired(task.last_streak_date)
+            )
+            .map((task) => task.id)
+        : [];
+
+      if (!supportsDatabaseStreaks) {
+        dailyTasks.forEach((task) => {
+          const storedStreak = getStoredDailyStreak(task.id);
+          if (isDailyStreakExpired(storedStreak.lastCompletedDate)) {
+            clearStoredDailyStreak(task.id);
+          }
+        });
+      }
 
       if (tasksToResetIds.length > 0) {
         const { error } = await supabase
@@ -127,8 +184,18 @@ export default function ChecklistPage() {
         if (error) {
           console.error('Error resetting daily tasks:', error);
         } else {
-          console.log(`Reset ${tasksToResetIds.length} daily recurring task(s)`);
-          await loadTasks();
+          console.log('Reset daily recurring tasks');
+        }
+      }
+
+      if (expiredStreakIds.length > 0) {
+        const { error } = await supabase
+          .from('tasks')
+          .update({ daily_streak: 0, last_streak_date: null } as any)
+          .in('id', expiredStreakIds);
+
+        if (error) {
+          console.error('Error resetting missed daily streaks:', error);
         }
       }
     } catch (err) {
@@ -418,14 +485,57 @@ export default function ChecklistPage() {
   };
 
   const handleToggleComplete = async (id: string, completed: boolean) => {
-    const { error } = await supabase
+    const task = tasks.find((item) => item.id === id);
+    const isDailyTask = task?.recurrence?.pattern === 'daily';
+
+    if (!task || !isDailyTask) {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ completed_at: completed ? new Date().toISOString() : null } as any)
+        .eq('id', id);
+
+      if (error) {
+        toast.error('Failed to update task');
+        return;
+      }
+
+      toast.success(completed ? 'Task completed' : 'Task reopened');
+      loadTasks();
+      return;
+    }
+
+    const currentStreak = {
+      count: task.daily_streak || 0,
+      lastCompletedDate: task.last_streak_date || null,
+    };
+    const nextStreak = completed
+      ? completeDailyStreak(currentStreak)
+      : reopenDailyStreak(currentStreak);
+    const completionUpdate = {
+      completed_at: completed ? new Date().toISOString() : null,
+      daily_streak: nextStreak.count,
+      last_streak_date: nextStreak.lastCompletedDate,
+    };
+
+    const { error: streakUpdateError } = await supabase
       .from('tasks')
-      .update({ completed_at: completed ? new Date().toISOString() : null } as any)
+      .update(completionUpdate as any)
       .eq('id', id);
 
-    if (error) {
-      toast.error('Failed to update task');
-      return;
+    if (streakUpdateError) {
+      const { error: completionError } = await supabase
+        .from('tasks')
+        .update({ completed_at: completionUpdate.completed_at } as any)
+        .eq('id', id);
+
+      if (completionError) {
+        toast.error('Failed to update task');
+        return;
+      }
+
+      setStoredDailyStreak(id, nextStreak);
+    } else {
+      clearStoredDailyStreak(id);
     }
 
     toast.success(completed ? 'Task completed' : 'Task reopened');
@@ -458,9 +568,9 @@ export default function ChecklistPage() {
 
   return (
     <AppLayout>
-      <div className="h-[calc(100vh-4rem)] md:h-[calc(100vh-4rem)] flex overflow-hidden">
+      <div className="h-[calc(100vh-4rem)] md:h-screen flex overflow-hidden">
         {/* Desktop Sidebar */}
-        <aside className="hidden md:block w-64 lg:w-80 flex-shrink-0 overflow-y-auto">
+        <aside className="hidden md:block w-[248px] flex-shrink-0 overflow-y-auto border-r border-slate-800/60">
           <CategorySidebar
             categories={categories}
             selectedCategoryId={selectedCategoryId}
@@ -485,13 +595,13 @@ export default function ChecklistPage() {
 
         <main className="flex-1 flex flex-col overflow-hidden">
           {/* Mobile Top Controls */}
-          <div className="md:hidden p-3 border-b border-white/10 glass-panel">
+          <div className="md:hidden p-3 border-b border-slate-800/80 bg-[#0d1422]/95">
             <div className="flex items-center gap-2 mb-3">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setIsMobileDrawerOpen(true)}
-                className="glass-input text-white hover:bg-white/10 h-10 px-3 font-medium"
+                className="glass-input h-10 px-3 font-medium text-slate-200 hover:bg-white/[0.05]"
               >
                 <Menu className="h-4 w-4 mr-2" />
                 Categories
@@ -499,7 +609,7 @@ export default function ChecklistPage() {
 
               {selectedCategory && (
                 <div
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg glass-panel border-white/10 flex-1 min-w-0"
+                  className="surface-card flex min-w-0 flex-1 items-center gap-2 rounded-lg px-3 py-2"
                 >
                   <div
                     className="w-3 h-3 rounded-full flex-shrink-0"
@@ -512,7 +622,7 @@ export default function ChecklistPage() {
               )}
 
               {!selectedCategory && (
-                <div className="flex items-center px-3 py-2 rounded-lg glass-panel border-white/10 flex-1">
+                <div className="surface-card flex flex-1 items-center rounded-lg px-3 py-2">
                   <span className="text-sm text-white font-medium">All Tasks</span>
                 </div>
               )}
@@ -538,32 +648,39 @@ export default function ChecklistPage() {
           </div>
 
           {/* Desktop Header */}
-          <div className="hidden md:block p-6 border-b border-white/10 glass-panel">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-white">
-                {selectedCategoryId
-                  ? categories.find((c) => c.id === selectedCategoryId)?.name
-                  : 'All Tasks'}
-              </h2>
+          <div className="hidden md:block border-b border-slate-800/70 bg-[#0b111d]/80 px-7 py-6">
+            <div className="mb-5 flex items-end justify-between">
+              <div>
+                <div className="eyebrow mb-1.5">Live workspace</div>
+                <h2 className="text-2xl font-bold tracking-tight text-white">
+                  {selectedCategoryId
+                    ? categories.find((c) => c.id === selectedCategoryId)?.name
+                    : 'All tasks'}
+                </h2>
+                <p className="mt-1 text-xs text-slate-500">
+                  {filteredAndSortedTasks.length} {filteredAndSortedTasks.length === 1 ? 'task' : 'tasks'} in view
+                  {!selectedCategoryId && filteredAndSortedTasks.length > 0 ? ' � Drag the grip to reorder or change categories' : ''}
+                </p>
+              </div>
               <Button onClick={handleNewTask} className="btn-gradient font-medium">
                 <Plus className="h-4 w-4 mr-2" />
                 New Task
               </Button>
             </div>
 
-            <div className="relative">
+            <div className="relative max-w-xl">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search tasks..."
-                className="pl-10 glass-input text-white placeholder:text-gray-400"
+                placeholder="Search tasks and notes..."
+                className="glass-input h-10 pl-10 text-white placeholder:text-slate-600"
               />
             </div>
           </div>
 
           {/* Task List with bottom padding for mobile nav */}
-          <div className="flex-1 overflow-y-auto p-3 md:p-6 pb-24 md:pb-6">
+          <div className="flex-1 overflow-y-auto p-3 pb-24 md:p-7 md:pb-7">
             {!selectedCategoryId ? (
               <CategorizedTaskList
                 tasks={filteredAndSortedTasks}

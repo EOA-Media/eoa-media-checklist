@@ -6,18 +6,21 @@ export type Database = {
           id: string;
           name: string;
           email: string;
+          username: string | null;
           created_at: string;
         };
         Insert: {
           id: string;
           name: string;
           email: string;
+          username?: string | null;
           created_at?: string;
         };
         Update: {
           id?: string;
           name?: string;
           email?: string;
+          username?: string | null;
           created_at?: string;
         };
       };
@@ -56,6 +59,8 @@ export type Database = {
           start_time: string | null;
           end_time: string | null;
           completed_at: string | null;
+          daily_streak: number;
+          last_streak_date: string | null;
           sort_order: number;
           created_at: string;
           updated_at: string;
@@ -71,6 +76,8 @@ export type Database = {
           start_time?: string | null;
           end_time?: string | null;
           completed_at?: string | null;
+          daily_streak?: number;
+          last_streak_date?: string | null;
           sort_order?: number;
           created_at?: string;
           updated_at?: string;
@@ -86,6 +93,8 @@ export type Database = {
           start_time?: string | null;
           end_time?: string | null;
           completed_at?: string | null;
+          daily_streak?: number;
+          last_streak_date?: string | null;
           sort_order?: number;
           created_at?: string;
           updated_at?: string;

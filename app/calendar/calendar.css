@@ -1,7 +1,7 @@
 :root {
-  --fc-border-color: rgba(255, 255, 255, 0.1);
+  --fc-border-color: rgba(131, 151, 184, 0.13);
   --fc-button-bg-color: transparent;
-  --fc-button-border-color: rgba(255, 255, 255, 0.1);
+  --fc-button-border-color: rgba(131, 151, 184, 0.18);
   --fc-button-hover-bg-color: rgba(255, 255, 255, 0.1);
   --fc-button-hover-border-color: rgba(255, 255, 255, 0.2);
   --fc-button-active-bg-color: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -11,6 +11,8 @@
 
 .fc {
   color: #fff;
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: rgba(17, 25, 40, 0.75);
 }
 
 .fc .fc-button {
@@ -20,7 +22,7 @@
   text-transform: capitalize;
   font-weight: 500;
   padding: 0.5rem 1rem;
-  border-radius: 0.75rem;
+  border-radius: 0.6rem;
   transition: all 0.2s;
 }
 
@@ -56,8 +58,8 @@
 }
 
 .fc .fc-col-header-cell {
-  background-color: rgba(255, 255, 255, 0.03);
-  color: #9ca3af;
+  background-color: rgba(8, 14, 26, 0.45);
+  color: #718096;
   font-weight: 600;
   text-transform: uppercase;
   font-size: 0.75rem;
@@ -66,7 +68,7 @@
 }
 
 .fc .fc-daygrid-day-number {
-  color: #e5e7eb;
+  color: #cbd5e1;
   padding: 0.25rem;
   font-weight: 500;
 }
@@ -146,7 +148,7 @@
 
 .fc-toolbar-title {
   color: #fff;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 700;
   background: linear-gradient(135deg, #fff 0%, #e5e7eb 100%);
   -webkit-background-clip: text;

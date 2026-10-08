@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { TaskRow } from './TaskRow';
@@ -26,6 +27,17 @@ export function DraggableTaskRow({
   onDeleteTask,
   categoryColor,
 }: DraggableTaskRowProps) {
+  const [isCoarsePointer, setIsCoarsePointer] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(pointer: coarse)');
+    const updatePointerType = () => setIsCoarsePointer(mediaQuery.matches);
+
+    updatePointerType();
+    mediaQuery.addEventListener('change', updatePointerType);
+    return () => mediaQuery.removeEventListener('change', updatePointerType);
+  }, []);
+
   const {
     attributes,
     listeners,
@@ -56,7 +68,8 @@ export function DraggableTaskRow({
         onToggleComplete={onToggleComplete}
         onEditTask={onEditTask}
         onDeleteTask={onDeleteTask}
-        dragHandleProps={listeners}
+        dragHandleProps={isCoarsePointer ? undefined : listeners}
+        rowDragHandleProps={isCoarsePointer ? listeners : undefined}
         isDragging={isDragging}
         categoryColor={categoryColor}
       />

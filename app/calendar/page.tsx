@@ -334,9 +334,14 @@ export default function CalendarPage() {
 
   return (
     <AppLayout>
-      <div className="h-[calc(100vh-4rem)] md:h-[calc(100vh-4rem)] overflow-hidden">
-        <div className="h-full p-4 md:p-6 overflow-auto pb-24 md:pb-6">
-          <div className="glass-panel border-white/10 rounded-2xl p-4 md:p-6 backdrop-blur-xl">
+      <div className="h-[calc(100vh-4rem)] overflow-hidden md:h-screen">
+        <div className="h-full overflow-auto p-4 pb-24 md:p-7 md:pb-7">
+          <div className="mb-6">
+            <div className="eyebrow mb-1.5">Time blocks</div>
+            <h1 className="text-2xl font-bold tracking-tight text-white">Calendar</h1>
+            <p className="mt-1 text-xs text-slate-500">See scheduled work and protect time for what matters.</p>
+          </div>
+          <div className="surface-card rounded-2xl p-3 md:p-5">
             <FullCalendar
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
               initialView="dayGridMonth"

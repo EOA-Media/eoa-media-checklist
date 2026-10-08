@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2 } from 'lucide-react';
+import { ArrowRight, CheckCircle2, CheckSquare, Loader2, UserPlus } from 'lucide-react';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -22,49 +22,37 @@ export default function SignupPage() {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
     }
-
     if (password.length < 6) {
       setError('Password must be at least 6 characters');
       return;
     }
-
     setLoading(true);
-
     try {
       const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
-
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-
+      const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
       if (authError) {
         setError(authError.message);
         setLoading(false);
         return;
       }
-
       if (authData.user) {
         const { error: profileError } = await supabase.from('profiles').insert({
           id: authData.user.id,
           name,
           email,
         } as any);
-
         if (profileError) {
           setError(profileError.message);
           setLoading(false);
           return;
         }
-
         router.push('/checklist');
         router.refresh();
       }
@@ -75,99 +63,59 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl shadow-2xl p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">Create Account</h1>
-            <p className="text-gray-400">Join EOA Media Checklist</p>
+    <main className="relative min-h-screen overflow-hidden bg-[#080d18] px-4 py-8">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(47,108,246,0.14),transparent_30%),radial-gradient(circle_at_82%_78%,rgba(140,53,237,0.12),transparent_32%)]" />
+      <div className="relative mx-auto grid min-h-[calc(100vh-4rem)] max-w-6xl items-center gap-12 lg:grid-cols-[1.05fr_0.95fr]">
+        <section className="hidden lg:block">
+          <div className="mb-12 flex items-center gap-3">
+            <div className="h-11 w-11 rounded-xl btn-gradient flex items-center justify-center">
+              <CheckSquare className="h-5 w-5 text-white" />
+            </div>
+            <div><div className="font-bold text-white">EOA Media</div><div className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Checklist System</div></div>
           </div>
-
-          {error && (
-            <Alert variant="destructive" className="mb-6">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          <form onSubmit={handleSignup} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-gray-200">Name</Label>
-              <Input
-                id="name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="John Doe"
-                required
-                className="bg-gray-900/50 border-gray-600 text-white placeholder:text-gray-500 focus:border-blue-500"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-gray-200">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@email.com"
-                required
-                className="bg-gray-900/50 border-gray-600 text-white placeholder:text-gray-500 focus:border-blue-500"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-gray-200">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="bg-gray-900/50 border-gray-600 text-white placeholder:text-gray-500 focus:border-blue-500"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-gray-200">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="bg-gray-900/50 border-gray-600 text-white placeholder:text-gray-500 focus:border-blue-500"
-              />
-            </div>
-
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white h-11 text-base"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating account...
-                </>
-              ) : (
-                'Create Account'
-              )}
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-gray-400">
-              Already have an account?{' '}
-              <Link href="/login" className="text-blue-400 hover:text-blue-300 font-medium">
-                Sign in
-              </Link>
-            </p>
+          <div className="eyebrow mb-4">Your command center</div>
+          <h1 className="max-w-xl text-5xl font-bold leading-[1.08] tracking-[-0.04em] text-white">Build a calmer, clearer <span className="text-gradient">workday.</span></h1>
+          <p className="mt-5 max-w-lg text-lg leading-8 text-slate-400">Create your workspace and turn every priority into a visible next action.</p>
+          <div className="mt-9 space-y-3">
+            {['Organize work your way', 'Plan recurring routines', 'See time-blocked work at a glance'].map((item) => (
+              <div key={item} className="flex items-center gap-3 text-sm text-slate-300"><CheckCircle2 className="h-4 w-4 text-indigo-400" />{item}</div>
+            ))}
           </div>
-        </div>
+        </section>
+
+        <section className="mx-auto min-w-0 w-full max-w-[460px]">
+          <div className="mb-7 flex items-center justify-center gap-3 lg:hidden">
+            <div className="h-10 w-10 rounded-xl btn-gradient flex items-center justify-center"><CheckSquare className="h-5 w-5 text-white" /></div>
+            <span className="font-bold text-white">EOA Media</span>
+          </div>
+          <div className="surface-card w-full min-w-0 max-w-full overflow-hidden rounded-2xl p-6 sm:p-8">
+            <div className="mb-7">
+              <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl border border-indigo-400/20 bg-indigo-500/10"><UserPlus className="h-[18px] w-[18px] text-indigo-300" /></div>
+              <div className="eyebrow mb-2">Get started</div>
+              <h2 className="text-2xl font-bold tracking-tight text-white">Create your workspace</h2>
+              <p className="mt-2 text-sm text-slate-500">Set up your EOA Media checklist.</p>
+            </div>
+            {error && <Alert variant="destructive" className="mb-5 border-red-500/25 bg-red-500/10 text-red-300"><AlertDescription>{error}</AlertDescription></Alert>}
+            <form onSubmit={handleSignup} className="space-y-4">
+              {[
+                { id: 'name', label: 'Name', type: 'text', value: name, set: setName, placeholder: 'Your name' },
+                { id: 'email', label: 'Email', type: 'email', value: email, set: setEmail, placeholder: 'you@eoamedia.net' },
+                { id: 'password', label: 'Password', type: 'password', value: password, set: setPassword, placeholder: 'At least 6 characters' },
+                { id: 'confirmPassword', label: 'Confirm password', type: 'password', value: confirmPassword, set: setConfirmPassword, placeholder: 'Repeat your password' },
+              ].map((field) => (
+                <div key={field.id} className="space-y-2">
+                  <Label htmlFor={field.id} className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">{field.label}</Label>
+                  <Input id={field.id} type={field.type} value={field.value} onChange={(e) => field.set(e.target.value)} placeholder={field.placeholder} required className="glass-input h-11 min-w-0 w-full text-white placeholder:text-slate-600" />
+                </div>
+              ))}
+              <Button type="submit" disabled={loading} className="btn-gradient mt-2 h-11 w-full font-semibold">
+                {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating account...</> : <>Create account<ArrowRight className="ml-2 h-4 w-4" /></>}
+              </Button>
+            </form>
+            <p className="mt-6 break-words text-center text-sm text-slate-500">Already have an account?{' '}<Link href="/login" className="font-semibold text-indigo-300 hover:text-indigo-200">Sign in</Link></p>
+          </div>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }
