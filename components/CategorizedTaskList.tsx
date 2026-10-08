@@ -8,7 +8,7 @@ import {
   DragOverlay,
   DragOverEvent,
   DragStartEvent,
-  PointerSensor,
+  MouseSensor,
   TouchSensor,
   closestCorners,
   useSensor,
@@ -72,11 +72,11 @@ export function CategorizedTaskList({
   }, [tasks]);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: { distance: 8 },
     }),
     useSensor(TouchSensor, {
-      activationConstraint: { delay: 200, tolerance: 5 },
+      activationConstraint: { delay: 450, tolerance: 10 },
     })
   );
 

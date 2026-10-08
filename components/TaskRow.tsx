@@ -115,7 +115,7 @@ export function TaskRow({
     <>
       <div
         {...rowDragHandleProps}
-        className={`surface-card group relative cursor-pointer overflow-hidden rounded-xl transition-all duration-200 hover:border-indigo-400/25 hover:bg-[#141e30] hover:shadow-lg hover:shadow-indigo-950/30 ${rowDragHandleProps ? 'touch-none' : ''} ${
+        className={`surface-card group relative cursor-pointer overflow-hidden rounded-xl transition-all duration-200 hover:border-indigo-400/25 hover:bg-[#141e30] hover:shadow-lg hover:shadow-indigo-950/30 ${rowDragHandleProps ? 'touch-pan-y' : ''} ${
           isCompleted ? 'opacity-60' : ''
         } ${isDragging ? 'opacity-50 scale-105 shadow-xl shadow-blue-500/30 border-blue-500/50' : ''}`}
         onClick={handleRowClick}
