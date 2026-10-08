@@ -499,7 +499,9 @@ export default function ChecklistPage() {
         return;
       }
 
-      toast.success(completed ? 'Task completed' : 'Task reopened');
+      if (!completed) {
+        toast.success('Task reopened');
+      }
       loadTasks();
       return;
     }
@@ -538,7 +540,9 @@ export default function ChecklistPage() {
       clearStoredDailyStreak(id);
     }
 
-    toast.success(completed ? 'Task completed' : 'Task reopened');
+    if (!completed) {
+      toast.success('Task reopened');
+    }
     loadTasks();
   };
 
